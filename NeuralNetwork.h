@@ -1,4 +1,3 @@
-
 /*
 *	Name: NeuralNetwork.h
 *
