@@ -1,5 +1,5 @@
 
-double activationDerivee; //Xavier/*
+/*
 *	Name: NeuralNetwork.h
 *
 *	Written by: Tomy Aumont
