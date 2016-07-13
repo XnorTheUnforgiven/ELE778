@@ -83,6 +83,31 @@ void Neurone::CalcData( vector<double> inputs )
 	this->data = newData + this->GetTheta();
 }
 /*-------------------------------------------------------------------------------------
+*	Nom			:	CalcDelta
+*	Écris par	:	Xavier Mercure-Gagnon
+*
+*	Description	:	Calcul la valeur Delta d'un neurone à partir du taux d'apprentissage,
+*					de la données activées et de la fonction d'activation dérivée.
+*					L'entrée 
+-------------------------------------------------------------------------------------*/
+void Neurone::CalcDelta(vector<double> inputs, string activFct, double learnRate, bool isLastLayer)
+{
+	if (isLastLayer)
+	{
+		this->delta = (learnRate - this->activation)*((this->CalcActivationDerivee(this->data, activFct)));
+	}
+	else
+	{
+		double totalDelta = 0;
+
+		for (int neuroneIt = 0; neuroneIt < inputs.size(); neuroneIt++)
+		{
+			totalDelta += inputs[neuroneIt];
+		}
+		this->delta = totalDelta*((this->CalcActivationDerivee(this->data, activFct)));
+	}
+}
+/*-------------------------------------------------------------------------------------
 *	Nom			:	GetActivation
 *	Écris par	:	Tomy Aumont
 *
@@ -94,6 +119,23 @@ void Neurone::CalcActivation( string activationFct )
 	if( !strcmp( activationFct.c_str(), "SIGMOIDE") )
 		this->activation = ( 1 / ( 1 + exp(this->data) ) );
 
+	else
+		cout << "Fonction d'activation invalide! Verifier config.ini..." << endl;
+}
+/*-------------------------------------------------------------------------------------
+*	Nom			:	CalcActivationDerivee
+*	Écris par	:	xavier Mercure-Gagnon
+*
+*	Description	:	Calcul la dérivee de l'activation du neurone en utilisant la fonction
+*					recu en parametre et l'assigne au champs activation du neurone
+-------------------------------------------------------------------------------------*/
+double Neurone::CalcActivationDerivee( double data, string activationFct)
+{
+	if (!strcmp(activationFct.c_str(), "SIGMOIDE"))
+	{
+		double lnEuler = log(exp(1.0));
+		this->activationDerivee = (lnEuler / (4 * pow(cosh(lnEuler*(this->data) / 2), 2.0)));
+	}
 	else
 		cout << "Fonction d'activation invalide! Verifier config.ini..." << endl;
 }
@@ -288,11 +330,25 @@ void Layer::SetActivations( void )
 	}
 }
 /*-------------------------------------------------------------------------------------
+*	Nom			:	SetDeltas
+*	Écris par	:	Xavier Mercure-Gagnon
+*
+*	Description	:	Cree un vecteur contenant le delta de chaque neurone de la couche
+-------------------------------------------------------------------------------------*/
+void Layer::SetDeltas(void)
+{
+	for (int neuroneIt = 0; neuroneIt < this->neurones.size(); neuroneIt++)
+	{
+		this->deltas.push_back(this->neurones[neuroneIt].GetDelta() );
+	}
+}
+/*-------------------------------------------------------------------------------------
 *	Nom			:	GetNeurones
 *	Écris par	:	Tomy Aumont
 *
 *	Description	:	Recupere le vecteur de neurone de cette couche
 -------------------------------------------------------------------------------------*/
+
 vector<Neurone> Layer::GetNeurones( void )
 {
 	return this->neurones;
@@ -306,6 +362,16 @@ vector<Neurone> Layer::GetNeurones( void )
 vector<double> Layer::GetActivations( void )
 {
 	return this->activations;
+}
+/*-------------------------------------------------------------------------------------
+*	Nom			:	GetDeltas
+*	Écris par	:	Xavier Mercure-Gagnon
+*
+*	Description	:	Recupere le vecteur de deltas de la couche
+-------------------------------------------------------------------------------------*/
+vector<double> Layer::GetDeltas(void)
+{
+	return this->deltas;
 }
 /*-------------------------------------------------------------------------------------
 *	Nom			:	GetNeuronesSize
@@ -437,7 +503,7 @@ bool NeuralNetwork::Train( vector<FileInfo> trainFiles, int learnDelay,
 			{
 				// Calcul les donnees et les activations des neurones
 				this->PhaseOne( trainFiles[fileIt], activFct );
-				this->PhaseTwo();
+				this->PhaseTwo( trainFiles[fileIt], activFct );
 				this->PhaseThree();
 		//		Si la validation croisee est acceptable, quitte la boucle
 		//		d'apprentissage de ce chiffre
@@ -491,13 +557,39 @@ void NeuralNetwork::PhaseOne( FileInfo trainFile, string activFct )
 }
 /*-------------------------------------------------------------------------------------
 *	Nom			:	PhaseTwo
-*	Écris par	:	Tomy Aumont
+*	Écris par	:	Xavier Mercure-Gagnon
 *
 *	Description	:	Calcul l'erreur (delta) de chaque neurone
 -------------------------------------------------------------------------------------*/
-void NeuralNetwork::PhaseTwo( void )
+void NeuralNetwork::PhaseTwo(vector<FileInfo> trainFiles, string activFct)
 {
+	for (int fileIt = 0; fileIt < trainFiles.size(); fileIt++)
+	{
+		int layerMaxSize = this->layers.size();
 
+		for (int layerIt = layerMaxSize; layerIt <= 0; layerIt--) 
+			//Dernière à la première couche
+		{
+
+			for (int neuroneIt = 0;
+				neuroneIt < this->layers[layerIt].GetNeuronesSize(); neuroneIt++)
+			{
+				if (layerIt == layerMaxSize) //Dernière couche
+				{
+					this->layers[layerIt].GetNeurones()[neuroneIt].CalcDelta
+						( this->layers[layerIt + 1].GetDeltas(),activFct,
+						this->alpha, true);
+				}
+				else //Autres couches
+				{
+					this->layers[layerIt].GetNeurones()[neuroneIt].CalcDelta
+						( this->layers[layerIt + 1].GetDeltas(),activFct,
+						this->alpha, false);
+				}
+			}
+			this->layers[layerIt].SetDeltas();
+		}
+	}
 }
 /*-------------------------------------------------------------------------------------
 *	Nom			:	PhaseThree
