@@ -1,4 +1,5 @@
-/*
+
+double activationDerivee; //Xavier/*
 *	Name: NeuralNetwork.h
 *
 *	Written by: Tomy Aumont
@@ -41,6 +42,7 @@ class Neurone
 private:
 	double data;
 	double activation;
+	double activationDerivee; //Xavier
 	double delta;	// erreur
 	double theta;	// ??? je me souviens plus ce que c'est mais il doit etre a zero
 	double alpha;	// taux d'apprentissage
@@ -59,7 +61,8 @@ public:
 	void SetAlpha( double val );
 	void CalcData( vector<double> inputs );
 	void CalcActivation( string activationFct );
-	void CalcDelta( void );
+	double CalcActivationDerivee(double data, string activationFct); //Xavier
+	void CalcDelta(vector<double> inputs, string activFct, double learnRate, bool isLastLayer); //Xavier
 	void SetID( PosID_s val );
 	
 
@@ -79,6 +82,9 @@ private:
 	vector<Neurone> neurones;	// liste de neurone de la couche
 	vector<double> activations; /* vecteur contenant la valeur d'activation de chaque
 								neurone de la couche	*/
+	vector<double> deltas; //Xavier
+						   /* vecteur contenant le delta de chaque
+								neurone de la couche	*/
 
 public:
 	Layer( void );
@@ -92,9 +98,11 @@ public:
 
 
 	void SetActivations( void );
+	void SetDeltas( void ); //Xavier
 
 	vector<Neurone> GetNeurones( void );
 	vector<double> GetActivations( void );
+	vector<double> GetDeltas( void ); //Xavier
 
 
 	int GetNeuronesSize( void );
@@ -113,7 +121,7 @@ private:
 
 	// Calcul la donnee et l'activaiton de chaque neurone
 	void PhaseOne( FileInfo trainFile, string activFct );
-	void PhaseTwo( void );		// Calcul l'erreur (delta) de chaque neurone
+	void PhaseTwo( vector<FileInfo> trainFiles, string activFct);	//Xavier	// Calcul l'erreur (delta) de chaque neurone
 	void PhaseThree( void );	// Calcul et actualise les poids
 	void CrossValidation( vector<FileInfo> vcFiles );
 
