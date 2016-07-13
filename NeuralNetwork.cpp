@@ -137,8 +137,10 @@ double Neurone::CalcActivationDerivee(double data, string activationFct)
 		return activationDerivee;
 	}
 	else
+	{
 		cout << "Fonction d'activation invalide! Verifier config.ini..." << endl;
-	return ERROR;
+		return ERROR;
+	}
 }
 /*-------------------------------------------------------------------------------------
 *	Nom			:	SetTag
